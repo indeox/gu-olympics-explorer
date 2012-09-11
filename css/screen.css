@@ -1,0 +1,170 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #222;
+    font-size: 10px;
+}
+
+
+.container {
+    width: 1000px;
+    height: 768px;
+    overflow: hidden;
+    margin: 20px auto 0 auto;
+}
+
+/* Header */
+header {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    opacity: 0;
+}
+header h1,
+header h2 {
+    font-size: 3em;
+    display: inline;
+    font-family: 'Merriweather', serif;
+    font-weight: 900;
+}
+header h1 {
+    color: #aaa;
+}
+header h1 span {
+    color: #aaa;
+}
+header h2 {
+    color: orange;
+}
+
+.body {
+    position: relative;
+    height: 100%;
+}
+
+.body > ul {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* General Grid Styles */
+.grid {
+    opacity: 0;
+    overflow: hidden;
+    list-style-type: none;
+    -webkit-transition: opacity 250ms linear;
+}
+.grid li img {
+    width: 50px;
+    height: 30px;
+    opacity: 0;
+    -webkit-transform: translate3d(0, 0, 0);
+    -webkit-backface-visibility: hidden;
+    -webkit-perspective: 1000;
+}
+.grid li {
+    float: left;
+    line-height: 0;
+}
+.grid.faded {
+    opacity: 0.3;
+}
+
+
+/* Intro Grid */
+.intro-grid {
+    opacity: 1;
+    z-index: 10;
+    -webkit-mask: url(../img/gu_oly_logo.png) 50% 0 no-repeat;
+}
+
+/* Main Grid */
+.main-grid {
+    z-index: 20;
+    opacity: 1;
+}
+.main-grid img {
+    cursor: pointer;
+}
+
+/* Main image */
+.main-image {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    z-index: 50;
+    width: 1000px;
+    opacity: 0;
+}
+.main-image img {
+    width: 1000px;
+    cursor: pointer;
+}
+.main-image .caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    color: #eee;
+    font-family: 'Merriweather', serif;
+    font-size: 16px;
+    background: rgba(0,0,0,0.7);
+    padding: 8px 16px;
+}
+
+
+/* Timeline */
+.timeline {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 100px;
+    width: 1024px;
+    background: rgba(0,0,0,0.8);
+    z-index: 50;
+    opacity: 0;
+    -webkit-transition: opacity 250ms linear;
+}
+.timeline.visible {
+    opacity: 1;
+}
+
+.timeline .preview {
+    position: absolute;
+    top: -90px;
+    box-shadow: 0 0 10px orange;
+    pointer-events: none;
+    -webkit-transition: opacity 250ms linear;
+    opacity: 0;
+    z-index: 55;
+    background-color: #000;
+}
+.timeline .preview.visible {
+    opacity: 1;
+}
+
+.timeline .marker {
+    position: absolute;
+    top: 0;
+    border-right: 1px solid orange;
+    display: block;
+    height: 100px;
+    pointer-events: none;
+    opacity: 0;
+    -webkit-transition: opacity 250ms linear;
+}
+.timeline .marker.visible {
+    opacity: 1;
+}
+.timeline .preview .datetime {
+    color: #fff;
+    text-align: center;
+    font-family: 'Merriweather', serif;
+    font-weight: bold;
+}
+
+.timeline .placeholder {
+    color: #ccc;
+}
