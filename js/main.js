@@ -1,28 +1,72 @@
-app = {
+app = Backbone.Router.extend({
 
     models: {},
     views:  {},
     collections: {},
 
+    routes: {
+        '' :    'mainGrid',
+        ':id' : 'showMedia'
+    },
+
+    mainGrid: function() {
+
+    },
+
+    showMedia: function(id) {
+        var model = this.mainCollection.get(id);
+        this.mainView.mainImageView.showImage(model);
+    },
+
     init: function() {
-        var olympicCollection    = new app.collections.pictures({ url: 'feeds/olympics_images_pretty.json' }),
-            paralympicCollection = new app.collections.pictures({ url: 'feeds/paralympics_images_pretty.json' });
+        var olympicCollection = new app.collections.pictures({
+                                    name: 'Olympics',
+                                    url: 'feeds/olympics_images_pretty.json',
+                                    startDate: '2012-07-27',
+                                    endDate:   '2012-08-12'
+                                }),
 
-        var mainView = new app.views.mainView({ collection: olympicCollection });
+            paralympicCollection = new app.collections.pictures({
+                                    name: 'Paralympics',
+                                    url: 'feeds/paralympics_images_pretty.json' ,
+                                    startDate: '2012-08-29',
+                                    endDate:   '2012-09-11'
+                                });
 
+
+        this.mainCollection = olympicCollection;
+
+        this.mainView = new app.views.mainView({ collection: this.mainCollection });
+
+
+
+        paralympicCollection.fetch();
         olympicCollection.fetch();
     }
-};
+});
+
+app = new app();
+
+
 
 
 /* MODELS/COLLECTIONS */
 app.models.picture = Backbone.Model.extend({
-    idAttribute: 'mediaId'
+    idAttribute: 'mediaId',
+    initialize: function() {
+        var dayOfEvent = (moment(this.attributes.epoch).sod().valueOf() - this.collection.eventStartEpoch);
+
+        this.dayOfEvent  = dayOfEvent / 1000 / 60 / 60 / 24;
+        this.prettyLabel = this.collection.name + ' Day ' + this.dayOfEvent;
+    }
 });
 
 app.collections.pictures = Backbone.Collection.extend({
     model: app.models.picture,
     initialize: function(opts) {
+        this.eventStartEpoch = moment(opts.startDate).sod().valueOf();
+        this.eventEndEpoch = moment(opts.endDate).eod().valueOf();
+        this.name = opts.name;
         this.url = opts.url;
         this.on('reset', function() {
             //console.log(this);
@@ -34,8 +78,16 @@ app.collections.pictures = Backbone.Collection.extend({
 
 /* VIEWS */
 app.views.mainView = Backbone.View.extend({
+    el: '.container',
+
     initialize: function() {
         var self = this;
+
+        this.layout();
+        $(window).on('resize', function() {
+            self.layout();
+        });
+
         this.startupGridView = new app.views.startupGridView({ collection: this.collection });
         this.mainGridView = new app.views.mainGridView({ collection: this.collection });
         this.timelineView = new app.views.timelineView({ collection: this.collection });
@@ -58,6 +110,23 @@ app.views.mainView = Backbone.View.extend({
         this.timelineView.on('inactive', function() {
             self.mainGridView.$el.removeClass('faded'); //animate({ opacity: 1 });
         });
+
+        this.mainImageView.on('active', function() {
+            self.mainGridView.$el.addClass('faded'); //animate({ opacity: 0.3 });
+        });
+
+        this.mainImageView.on('inactive', function() {
+            self.mainGridView.$el.removeClass('faded'); //animate({ opacity: 1 });
+        });
+    },
+
+    layout: function() {
+        // Figure out the optimal size for the container depending on window size
+        this.winWidth = $(window).width();
+
+        var optimalWidth = this.winWidth - (this.winWidth % 50);
+
+        this.$el.width(optimalWidth);
     }
 });
 
@@ -169,7 +238,8 @@ app.views.mainGridView = Backbone.View.extend({
 
     selectImage: function(e) {
         var id = $(e.target).attr('data-id');
-        this.collection.trigger('goToModel', this.collection.get(id));
+        app.navigate(id, { trigger: true, replace: true });
+        //this.collection.trigger('goToModel', this.collection.get(id));
     },
 
     render: function() {
@@ -214,6 +284,10 @@ app.views.timelineView = Backbone.View.extend({
         this.imagePreviewNode = this.$('.preview .image-preview');
         this.datetimeNode     = this.$('.preview .datetime');
         this.markerNode       = this.$('.marker');
+
+        $(window).on('resize', function() {
+            self.width = self.$el.width();
+        });
     },
 
     show: function() {
@@ -238,12 +312,11 @@ app.views.timelineView = Backbone.View.extend({
         this.currentModel = this.collection.at(this.currentImageIndex);
 
         this.imagePreviewNode.attr('src', this.currentModel.get('140x84'));
-        var datetime = moment(this.currentModel.get('epoch')).format('MMM Do');
-        this.datetimeNode.text(datetime);
+        this.datetimeNode.text(this.currentModel.prettyLabel);
 
         var previewNodeX = e.offsetX - (140/2);
         // Don't put the preview box beyond the side edges
-        if (previewNodeX > 5 && previewNodeX < 1000-145) {
+        if (previewNodeX > 5 && previewNodeX < this.width-145) {
             this.previewNode.css('left', previewNodeX);
         }
 
@@ -253,7 +326,8 @@ app.views.timelineView = Backbone.View.extend({
     },
 
     selectImage: function() {
-        this.collection.trigger('goToModel', this.currentModel);
+        app.navigate(id, { trigger: true, replace: true });
+        //this.collection.trigger('goToModel', this.currentModel);
     }
 });
 
@@ -274,8 +348,10 @@ app.views.mainImageView = Backbone.View.extend({
         this.$el.show();
 
         this.$('img').attr('src', model.get('1024x614'));
-        this.$('.caption').text(model.get('caption'));
+        this.$('.caption').html('<span>'+model.prettyLabel + ':</span> ' + model.get('caption'));
         this.$el.animate({ opacity: 1 });
+
+        this.trigger('active');
     },
 
     close: function() {
@@ -285,11 +361,21 @@ app.views.mainImageView = Backbone.View.extend({
                 self.$el.hide();
             }
         });
+
+        this.trigger('inactive');
+        app.navigate('', { trigger: true, replace: true });
     }
 });
 
 
 $(document).ready(function() {
     bodyNode = $(document.body);
+
+    var rootUrl = window.location.href.match('deepcobalt') ? '/gudev/gu-olympics-explorer/' : '/dvella/gu-olympics-explorer/';
+
+    Backbone.history.start({
+        pushState: true,
+        root:      rootUrl
+    });
     app.init();
 });
